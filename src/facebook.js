@@ -51,37 +51,43 @@ class FacebookLogin extends React.Component {
   };
 
   componentWillMount() {
-    if (document.getElementById('facebook-jssdk')) {
-      this.setState({ isSdkLoaded: true });
-      return;
+    if (typeof (window) !== 'undefined') {
+      if (document.getElementById('facebook-jssdk')) {
+        this.setState({ isSdkLoaded: true });
+        return;
+      }
+      this.setFbAsyncInit();
+      this.loadSdkAsynchronously();
     }
-    this.setFbAsyncInit();
-    this.loadSdkAsynchronously();
   }
 
   componentDidMount() {
-    let fbRoot = document.getElementById('fb-root');
-    if (!fbRoot) {
-      fbRoot = document.createElement('div');
-      fbRoot.id = 'fb-root';
-      document.body.appendChild(fbRoot);
+    if (typeof (window) !== 'undefined') {
+      let fbRoot = document.getElementById('fb-root');
+      if (!fbRoot) {
+        fbRoot = document.createElement('div');
+        fbRoot.id = 'fb-root';
+        document.body.appendChild(fbRoot);
+      }
     }
   }
 
   setFbAsyncInit() {
     const { appId, xfbml, cookie, version, autoLoad } = this.props;
-    window.fbAsyncInit = () => {
-      window.FB.init({
-        version: `v${version}`,
-        appId,
-        xfbml,
-        cookie,
-      });
-      this.setState({ isSdkLoaded: true });
-      if (autoLoad || window.location.search.includes('facebookdirect')) {
-        window.FB.getLoginStatus(this.checkLoginAfterRefresh);
-      }
-    };
+    if (typeof (window) !== 'undefined') {
+      window.fbAsyncInit = () => {
+        window.FB.init({
+          version: `v${version}`,
+          appId,
+          xfbml,
+          cookie,
+        });
+        this.setState({ isSdkLoaded: true });
+        if (autoLoad || window.location.search.includes('facebookdirect')) {
+          window.FB.getLoginStatus(this.checkLoginAfterRefresh);
+        }
+      };
+    }
   }
 
   loadSdkAsynchronously() {
@@ -98,14 +104,17 @@ class FacebookLogin extends React.Component {
   }
 
   responseApi = (authResponse) => {
-    window.FB.api('/me', { fields: this.props.fields }, (me) => {
-      Object.assign(me, authResponse);
-      this.props.callback(me);
-    });
+    if (typeof (window) !== 'undefined') {
+      window.FB.api('/me', { fields: this.props.fields }, (me) => {
+        Object.assign(me, authResponse);
+        this.props.callback(me);
+      });
+    }
   };
 
   checkLoginAfterRefresh = (response) => {
-    if (response.status === 'unknown') {
+
+    if (typeof (window) !== 'undefined' && response.status === 'unknown') {
       window.FB.login(loginResponse => this.checkLoginState(loginResponse), true);
     }
   };
@@ -140,14 +149,6 @@ class FacebookLogin extends React.Component {
       onClick();
     }
 
-    let isMobile = false;
-
-    try {
-      isMobile = ((window.navigator && window.navigator.standalone) || navigator.userAgent.match('CriOS') || navigator.userAgent.match(/mobile/i));
-    } catch (ex) {
-      // continue regardless of error
-    }
-
     const params = {
       client_id: appId,
       redirect_uri: redirectUri,
@@ -159,7 +160,9 @@ class FacebookLogin extends React.Component {
       params.auth_type = 'reauthenticate';
     }
 
-    window.FB.login(this.checkLoginState, { scope, auth_type: params.auth_type });
+    if (typeof (window) !== 'undefined') {
+      window.FB.login(this.checkLoginState, { scope, auth_type: params.auth_type });
+    }
   };
 
   style() {
